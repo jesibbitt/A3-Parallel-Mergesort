@@ -5,7 +5,7 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
-void merge(int * a, int * b, int lasta, int lastb, int * output = NULL)
+void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 {	
 	//the two fingers - each array only increments once it finds a valid answer. 
 	//lastb is the last index in b. lasta is the last index in a. 
@@ -57,7 +57,7 @@ void mergesort (int * a, int first, int last) //on first pass, last should just 
 	int mid = first + ((last - first+1) / 2);//gets the middle point (aka first pos in RHS)
 	mergesort(a, first, mid-1);
 	mergesort(a, mid, last);
-	merge(a + first, a + mid, mid-first-1, last-mid, a+first); //a start, b start, a last, b last. 
+	smerge(a + first, a + mid, mid-first-1, last-mid, a+first); //a start, b start, a last, b last. 
 
 }
 
