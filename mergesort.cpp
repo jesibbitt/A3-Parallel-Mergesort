@@ -5,6 +5,23 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
+int rank(int * a, int first, int last, int valToFind)
+{
+	int rank = 0;
+	for(int i = first; i<= last; i++)
+	{
+		if(valToFind > a[i])
+		{
+			rank++;
+		}
+		else
+		{
+			return rank;
+		}
+	}
+	return rank;
+}
+
 void merge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 {	
 	//the two fingers - each array only increments once it finds a valid answer. 
@@ -107,14 +124,29 @@ int main (int argc, char * argv[]) {
 		cout << a[i] << " | ";
 	}
 	cout << endl;
+
+	int b[10];
+	b[0] = 1;
+	b[1] = 2;
+	b[2] = 4;
+	b[3] = 7;
+	b[4] = 10;
+	b[5] = 3;
+	b[6] = 5;
+	b[7] = 6;
+	b[8] = 8;
+	b[9] = 9;
+
 	
 	//actually sort it. 
-	mergesort(a,0,arrSize-1);
+	//mergesort(a,0,arrSize-1);
+	int c [arrSize];
+	merge(b,b+(arrSize/2),(arrSize/2)-1,arrSize-1,c);
 	
 	//display the sorted array. 
 	for(int i =0; i<arrSize; i++)
 	{
-		cout << a[i] << " | ";
+		cout << c[i] << " | ";
 	}
 	cout << endl;
 	
