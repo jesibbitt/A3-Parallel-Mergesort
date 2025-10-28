@@ -58,7 +58,6 @@ void mergesort (int * a, int first, int last) //on first pass, last should just 
 	mergesort(a, first, mid-1);
 	mergesort(a, mid, last);
 	merge(a + first, a + mid, mid-first-1, last-mid, a+first); //a start, b start, a last, b last. 
-	
 
 }
 
