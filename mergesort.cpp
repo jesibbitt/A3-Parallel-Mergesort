@@ -70,12 +70,29 @@ void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 void mergesort (int * a, int first, int last) //on first pass, last should just be size of array-1. 
 {
 	if (first >= last){return;} //if we get to 1 left. 
-        
-	int mid = first + ((last - first+1) / 2);//gets the middle point (aka first pos in RHS)
-	mergesort(a, first, mid-1);
-	mergesort(a, mid, last);
-	smerge(a + first, a + mid, mid-first-1, last-mid, a+first); //a start, b start, a last, b last. 
+    
+	// New
+	int lasta = (last - first) / 2 + first;
+	int lastb = last;
+	int firstb = lasta + 1;
+	int firsta = first;
+	int mida = (lasta - firsta) / 2 + firsta;
+	int midb = (lastb - firstb) / 2 + firstb;
+	
+	// Initializations need changed. Maybe int sizeA = firsta - lasta + 1. Same for sizeB
+	int * tempa = a[first];
+	int * tempb = a[firstb];
 
+	mergesort(tempa, firsta, mida - 1);
+	mergesort(tempa, mida, lasta);
+	smerge(tempa + firsta, tempa + mida, mida - firsta - 1, last - mida, tempa + firsta);
+
+	mergesort(tempb, firstb, midb - 1);
+	mergesort(tempb, midb, lastb);
+	smerge(tempb + firstb, tempb + midb, midb - firstb - 1, last - midb, tempb + firstb);
+
+	int * c = new int[last + 1];
+	// pmerge next
 }
 
 // New compile and run commands for MPI!
