@@ -124,29 +124,14 @@ int main (int argc, char * argv[]) {
 		cout << a[i] << " | ";
 	}
 	cout << endl;
-
-	int b[10];
-	b[0] = 1;
-	b[1] = 2;
-	b[2] = 4;
-	b[3] = 7;
-	b[4] = 10;
-	b[5] = 3;
-	b[6] = 5;
-	b[7] = 6;
-	b[8] = 8;
-	b[9] = 9;
-
 	
 	//actually sort it. 
-	//mergesort(a,0,arrSize-1);
-	int c [arrSize];
-	merge(b,b+(arrSize/2),(arrSize/2)-1,arrSize-1,c);
+	mergesort(a,0,arrSize-1);
 	
 	//display the sorted array. 
 	for(int i =0; i<arrSize; i++)
 	{
-		cout << c[i] << " | ";
+		cout << a[i] << " | ";
 	}
 	cout << endl;
 	
