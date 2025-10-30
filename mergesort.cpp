@@ -7,6 +7,7 @@ using namespace std;
 
 int rank(int * a, int first, int last, int valToFind)
 {
+	//needs to be Binary Search -> goes to logn time instead of n time. 
 	int rank = 0;
 	for(int i = first; i<= last; i++)
 	{
