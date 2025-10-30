@@ -5,6 +5,83 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
+void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
+{
+	int n = lasta+1;
+	int m - lastb+1;
+
+	//step 1 -> create the SRANK arrays. 
+	int SRANKA[n];
+	int SRANKB[m];
+	int localSRANKA [n/p]; //may need to change this. 
+	int localSRANKB [m/p]; 
+
+	//we rank every n/logm or m/logn index of A and B. This call does this. 
+	localSRANKA[(n/log2(m))-1]=Rank(b, 0,lastb,a[(n/log2(m))*(my_rank+1)-1]);
+	localSRANKB[(m/log2(n))-1]=Rank(a, 0,lasta,b[(m/log2(n))*(my_rank+1)-1]);
+	//mpi gather the SRANK arrays on all procs.
+	MPI_Allgather(localSRANKA, n/p, MPI_INT, SRANKA, n/p, MPI_INT, MPI_COMM_WORLD);
+	MPI_Allgather(localSRANKB, m/p, MPI_INT, SRANKB, m/p, MPI_INT, MPI_COMM_WORLD);
+
+	//SRANK TEST PRINT
+	cout << "SRANKA: |";
+	for(int i = 0; i<n; i++)
+	{
+		cout << SRANKA[i] << " | ";
+	}
+	cout << endl;
+
+	cout << "SRANKB: |";
+	for(int i = 0; i<m; i++)
+	{
+		cout << SRANKB[i] << " | ";
+	}
+	cout << endl;
+
+	//step 2 -> Get the Shapes. 
+	/**get the A shape for my proc. Each proc will get an A shape and a B shape. 
+	*A shape A-side STARTS at a[SRANKB[(m/logn *my_rank)-1]]  || RIGHT
+	*A shape A-side ENDS at a[(n/logm)*(my_rank+1)-1]	|| RIGHT
+	*A shape B-side STARTS at b[n/logm*my_rank]	 || RIGHT
+	*A shape B-side ENDS at b[SRANKA[((n/logm)*(my_rank+1))-1]-1]	|| RIGHT
+	*smerge these. 
+	**/
+
+	/*
+	int aShapeAStart;
+	if((m/log2(n) *my_rank)-1) < 0)
+	{
+		aShapeAStart = SRANKB[0];
+	}
+	else
+	{
+		aShapeAStart = SRANKB[(m/log2(n) *my_rank)-1];
+	}
+	int aShapeBStart = n/log2(m)*my_rank;
+	int aShapeAEnd = ((n/log2(m))*(my_rank+1)-1)	- aShapeAStart; //need this - for smerge.
+	int aShapeBEnd = (SRANKA[((n/log2(m))*(my_rank+1))-1]-1)	- bShapeBStart;
+	int ShapeA[aShapeAEnd + aShapeBEnd];
+	smerge(a[aShapeAStart], b[aShapeBStart], aShapeAEnd, bShapeBEnd,ShapeA);
+
+	*/
+
+	/**get the B shape for my proc.  
+	 * B shape B-side STARTS at b[SRANKA[(my_rank+1)*(n/logm)-1]+1]
+	 * B shape A-side STARTS at a[(my_rank+1)*(n/logm)]
+	 * B shape B-sied ENDS at b[(m/logn)*(my_rank+1)-1]
+	 * B shape A-side ENDS at a[SRANKB[(my_rank+1)*(m/logn)-1]-1]
+	**/
+
+	/*
+	int bShapeBStart = SRANKA[(my_rank+1)*(n/log2(m))-1]+1;
+	int bShapeAStart = (my_rank+1)*(n/log2(m));
+	int bShapeBEnd = ((m/log2(n))*(my_rank+1)-1)	- bShapeBStart; // - for smerge
+	int bShapeAEnd = (SRANKB[(my_rank+1)*(m/log2(n))-1]-1)		-bShapeAStart;
+	int ShapeB[bShapeAEnd + bShapeBEnd];
+	smerge(b[bShapeBStart],a[bShapeAStart],bShapeBEnd,bShapeAEnd,ShapeB);
+	*/
+}
+
 int rank(int * a, int first, int last, int valToFind)
 {
 	//needs to be Binary Search -> goes to logn time instead of n time. 
