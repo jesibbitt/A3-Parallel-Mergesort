@@ -165,6 +165,62 @@ int main (int argc, char * argv[]) {
 	}
 	cout << endl;
 	
+	// Test arrays
+	int size = 16;
+	
+	int * a1 = new int [size];
+	a1[0] = 1;
+	a1[1] = 2;
+	a1[2] = 3;
+	a1[3] = 5;
+	a1[4] = 7;
+	a1[5] = 12;
+	a1[6] = 13;
+	a1[7] = 14;
+	a1[8] = 16;
+	a1[9] = 18;
+	a1[10] = 22;
+	a1[11] = 23;
+	a1[12] = 26;
+	a1[13] = 28;
+	a1[14] = 29;
+	a1[15] = 30;
+
+	for(int i =0; i<size; i++)
+	{
+		cout << a1[i] << " | ";
+	}
+	cout << endl;
+	
+	int * b1 = new int[size];
+	b1[0] = 4;
+	b1[1] = 6;
+	b1[2] = 8;
+	b1[3] = 9;
+	b1[4] = 10;
+	b1[5] = 11;
+	b1[6] = 15;
+	b1[7] = 17;
+	b1[8] = 19;
+	b1[9] = 20;
+	b1[10] = 21;
+	b1[11] = 24;
+	b1[12] = 25;
+	b1[13] = 27;
+	b1[14] = 31;
+	b1[15] = 32;
+
+	for(int i =0; i<size; i++)
+	{
+		cout << b1[i] << " | ";
+	}
+	cout << endl;
+
+	
+	
+	delete [] a1;
+	delete [] b1;
+
 	// Shut down MPI
 	MPI_Finalize();
 
