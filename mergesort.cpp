@@ -5,6 +5,7 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
+<<<<<<< HEAD
 void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 {
 	int n = lasta+1;
@@ -83,18 +84,31 @@ void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 }
 
 int rank(int * a, int first, int last, int valToFind)
+=======
+int Rank(int * a, int first, int last, int valToFind)
+>>>>>>> 50536655b8cc292955ac1ff5ec9d771bbe580f07
 {
-	//needs to be Binary Search -> goes to logn time instead of n time. 
+	// Binary Search
 	int rank = 0;
-	for(int i = first; i<= last; i++)
+	int low = first;
+	int high = last - first;
+	while(low <= high)
 	{
-		if(valToFind > a[i])
+		int mid = low + (high - low) / 2;
+		
+		if(a[mid] == valToFind)
 		{
+			return rank;
+		}
+		else if(a[mid] < valToFind)
+		{
+			low = mid + 1;
 			rank++;
 		}
 		else
 		{
-			return rank;
+			high = mid - 1;
+			rank++;
 		}
 	}
 	return rank;
@@ -156,10 +170,12 @@ void mergesort (int * a, int first, int last) //on first pass, last should just 
 	int firsta = first;
 	int mida = (lasta - firsta) / 2 + firsta;
 	int midb = (lastb - firstb) / 2 + firstb;
+	int sizeA = lasta - firsta;
+	int sizeB = lastb - firstb;
 	
 	// Initializations need changed. Maybe int sizeA = firsta - lasta + 1. Same for sizeB
-	int * tempa = a[first];
-	int * tempb = a[firstb];
+	int * tempa = new int[sizeA];
+	int * tempb = new int[sizeB];
 
 	mergesort(tempa, firsta, mida - 1);
 	mergesort(tempa, mida, lasta);
@@ -230,6 +246,62 @@ int main (int argc, char * argv[]) {
 	}
 	cout << endl;
 	
+	// Test arrays
+	int size = 16;
+	
+	int * a1 = new int [size];
+	a1[0] = 1;
+	a1[1] = 2;
+	a1[2] = 3;
+	a1[3] = 5;
+	a1[4] = 7;
+	a1[5] = 12;
+	a1[6] = 13;
+	a1[7] = 14;
+	a1[8] = 16;
+	a1[9] = 18;
+	a1[10] = 22;
+	a1[11] = 23;
+	a1[12] = 26;
+	a1[13] = 28;
+	a1[14] = 29;
+	a1[15] = 30;
+
+	for(int i =0; i<size; i++)
+	{
+		cout << a1[i] << " | ";
+	}
+	cout << endl;
+	
+	int * b1 = new int[size];
+	b1[0] = 4;
+	b1[1] = 6;
+	b1[2] = 8;
+	b1[3] = 9;
+	b1[4] = 10;
+	b1[5] = 11;
+	b1[6] = 15;
+	b1[7] = 17;
+	b1[8] = 19;
+	b1[9] = 20;
+	b1[10] = 21;
+	b1[11] = 24;
+	b1[12] = 25;
+	b1[13] = 27;
+	b1[14] = 31;
+	b1[15] = 32;
+
+	for(int i =0; i<size; i++)
+	{
+		cout << b1[i] << " | ";
+	}
+	cout << endl;
+
+	
+	
+	delete [] a1;
+	delete [] b1;
+
 	// Shut down MPI
 	MPI_Finalize();
 
