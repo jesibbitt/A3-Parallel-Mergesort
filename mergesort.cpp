@@ -5,19 +5,29 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
-int rank(int * a, int first, int last, int valToFind)
+int Rank(int * a, int first, int last, int valToFind)
 {
-	//needs to be Binary Search -> goes to logn time instead of n time. 
+	// Binary Search
 	int rank = 0;
-	for(int i = first; i<= last; i++)
+	int low = first;
+	int high = last - first;
+	while(low <= high)
 	{
-		if(valToFind > a[i])
+		int mid = low + (high - low) / 2;
+		
+		if(a[mid] == valToFind)
 		{
+			return rank;
+		}
+		else if(a[mid] < valToFind)
+		{
+			low = mid + 1;
 			rank++;
 		}
 		else
 		{
-			return rank;
+			high = mid - 1;
+			rank++;
 		}
 	}
 	return rank;
@@ -79,10 +89,12 @@ void mergesort (int * a, int first, int last) //on first pass, last should just 
 	int firsta = first;
 	int mida = (lasta - firsta) / 2 + firsta;
 	int midb = (lastb - firstb) / 2 + firstb;
+	int sizeA = lasta - firsta;
+	int sizeB = lastb - firstb;
 	
 	// Initializations need changed. Maybe int sizeA = firsta - lasta + 1. Same for sizeB
-	int * tempa = a[first];
-	int * tempb = a[firstb];
+	int * tempa = new int[sizeA];
+	int * tempb = new int[sizeB];
 
 	mergesort(tempa, firsta, mida - 1);
 	mergesort(tempa, mida, lasta);
