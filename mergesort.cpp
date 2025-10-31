@@ -5,7 +5,6 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
-<<<<<<< HEAD
 void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 {
 	int n = lasta+1;
@@ -83,35 +82,25 @@ void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 	*/
 }
 
-int rank(int * a, int first, int last, int valToFind)
-=======
 int Rank(int * a, int first, int last, int valToFind)
->>>>>>> 50536655b8cc292955ac1ff5ec9d771bbe580f07
 {
 	// Binary Search
-	int rank = 0;
 	int low = first;
-	int high = last - first;
-	while(low <= high)
+	int high = last;
+	while(low < high)
 	{
 		int mid = low + (high - low) / 2;
 		
-		if(a[mid] == valToFind)
-		{
-			return rank;
-		}
-		else if(a[mid] < valToFind)
+		if(a[mid] < valToFind)
 		{
 			low = mid + 1;
-			rank++;
 		}
 		else
 		{
-			high = mid - 1;
-			rank++;
+			high = mid;
 		}
 	}
-	return rank;
+	return low;
 }
 
 void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
@@ -173,7 +162,6 @@ void mergesort (int * a, int first, int last) //on first pass, last should just 
 	int sizeA = lasta - firsta;
 	int sizeB = lastb - firstb;
 	
-	// Initializations need changed. Maybe int sizeA = firsta - lasta + 1. Same for sizeB
 	int * tempa = new int[sizeA];
 	int * tempb = new int[sizeB];
 
