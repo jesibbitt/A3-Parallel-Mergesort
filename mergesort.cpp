@@ -34,29 +34,29 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 
 	//step 1 -> create the SRANK arrays. 
 	int * SRANKA = new int[n];
-	for(int i = 0; i < n; i++)
-	{
-		SRANKA[i] = 0;
-	}
 	int * SRANKB = new int[m];
-	for(int i = 0; i < m; i++)
-	{
-		SRANKB[i] = 0;
-	}
 
-	int * localSRANKA = new int[n/p]; //may need to change this. 
+	//create the local SRANKS. These will be gathered.
+	int * localSRANKA = new int[n/p];
+	for(int i = 0; i < n/p; i++)
+	{
+		localSRANKA[i] = 0;
+	}
 	int * localSRANKB = new int[m/p]; 
+	for(int i = 0; i < m/p; i++)
+	{
+		localSRANKB[i] = 0;
+	}
 
 	//we rank every n/logm or m/logn index of A and B. This call does this. 
 	localSRANKA[int(n/log2(m)-1)]=Rank(b, 0,lastb,a[int((n/log2(m))*(my_rank+1)-1)]);
 
 	if (my_rank == 0)
 	{
-		cout << "the rank - " << Rank(b, 0,lastb,a[int((n/log2(m))*(my_rank+1)-1)]) << endl;
 		cout << "AFTER RANK SRANKA: ";
 		for(int i =0; i<n/p; i++)
 		{
-			cout << SRANKA[i] << " | ";
+			cout << localSRANKA[i] << " | ";
 		}
 		cout << endl;
 	}
