@@ -6,6 +6,7 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
+<<<<<<< HEAD
 int Rank(int * a, int first, int last, int valToFind)
 {
 	// Binary Search
@@ -35,6 +36,9 @@ int Rank(int * a, int first, int last, int valToFind)
 }
 
 void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * output = NULL)
+=======
+void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
+>>>>>>> 70fa9d9640c57204c0f949c194e34ea2979920a2
 {
 	int n = lasta+1;
 	int m = lastb+1;
@@ -137,8 +141,32 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	int ShapeB[bShapeAEnd + bShapeBEnd];
 	smerge(b[bShapeBStart],a[bShapeAStart],bShapeBEnd,bShapeAEnd,ShapeB);
 	*/
+<<<<<<< HEAD
 	delete SRANKA;
 	delete SRANKB;
+=======
+}
+
+int Rank(int * a, int first, int last, int valToFind)
+{
+	// Binary Search
+	int low = first;
+	int high = last;
+	while(low < high)
+	{
+		int mid = low + (high - low) / 2;
+		
+		if(a[mid] < valToFind)
+		{
+			low = mid + 1;
+		}
+		else
+		{
+			high = mid;
+		}
+	}
+	return low;
+>>>>>>> 70fa9d9640c57204c0f949c194e34ea2979920a2
 }
 
 void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
@@ -200,7 +228,6 @@ void mergesort (int * a, int first, int last) //on first pass, last should just 
 	int sizeA = lasta - firsta;
 	int sizeB = lastb - firstb;
 	
-	// Initializations need changed. Maybe int sizeA = firsta - lasta + 1. Same for sizeB
 	int * tempa = new int[sizeA];
 	int * tempb = new int[sizeB];
 
