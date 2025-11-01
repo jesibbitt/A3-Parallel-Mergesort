@@ -82,16 +82,8 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	int * SRANKB = new int[m];
 
 	//create the local SRANKS. These will be gathered.
-	int * localSRANKA = new int[n/p];
-	for(int i = 0; i < n/p; i++)
-	{
-		localSRANKA[i] = 0;
-	}
-	int * localSRANKB = new int[m/p]; 
-	for(int i = 0; i < m/p; i++)
-	{
-		localSRANKB[i] = 0;
-	}
+	int * localSRANKA = new int[n/p]();
+	int * localSRANKB = new int[m/p](); 
 
 	//we rank every n/logm or m/logn index of A and B. This call does this. 
 	localSRANKA[int(n/log2(m)-1)]=Rank(b, 0,lastb,a[int((n/log2(m))*(my_rank+1)-1)]);
@@ -155,19 +147,10 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	int aShapeBStart = n/log2(m)*my_rank;
 	int aShapeAEnd = int(((n/log2(m))*(my_rank+1)-1) - aShapeAStart); //need - start for smerge
 	int aShapeBEnd = (SRANKA[int(((n/log2(m))*(my_rank+1))-1)]-1) - aShapeBStart;
-	int ShapeA[aShapeAEnd + aShapeBEnd];
-	smerge(a + aShapeAStart, b + aShapeBStart, aShapeAEnd, aShapeBEnd,ShapeA);
+	int shapeASize = aShapeAEnd + aShapeBEnd + 2;
+	
 
-	//aShapeTest
-	if(my_rank == 1)
-	{
-		cout << "SHAPE A: |";
-		for(int i = 0; i < (aShapeAEnd + aShapeBEnd+2); i++)
-		{
-			cout << ShapeA[i] << "| ";
-		}
-		cout << endl;
-	}
+	
 
 	/**get the B shape for my proc.  
 	 * B shape B-side STARTS at b[SRANKA[(my_rank+1)*(n/logm)-1]+1]
@@ -181,21 +164,48 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	int bShapeAStart = (my_rank+1)*(n/log2(m));
 	int bShapeBEnd = ((m/log2(n))*(my_rank+1)-1)	- bShapeBStart; // - for smerge
 	int bShapeAEnd = (SRANKB[int((my_rank+1)*(m/log2(n))-1)]-1)		-bShapeAStart;
-	int ShapeB[bShapeAEnd + bShapeBEnd];
-	smerge(b + bShapeBStart,a + bShapeAStart,bShapeBEnd,bShapeAEnd,ShapeB);
-	
-	if(my_rank == 0)
+
+	//STEP 3: MAKE OUR COMBINED SHAPE FOR OUR PROC
+	/** We need to make a big shape of A+B so that we can send both back
+	 * We do this by using a bigShape array, and calling smerge so that it returns-
+	 * each shape to its appropriate spot in the big shape (B after A.)
+	 * This is literally just 2 smerge calls.
+	**/
+	//shape of our 2 shapes that we are looking at.
+
+	if (bShapeAEnd < 0) //nothing in a side. 
 	{
-		cout << "bstart = " << bShapeBStart << endl;
-		cout << "SHAPE B: |";
-		for(int i = 0; i < (bShapeAEnd + bShapeBEnd+2); i++)
-		{
-			cout << ShapeB[i] << "| ";
-		}
-		cout << endl;
+		bShapeAStart = 0;
+		bShapeAEnd = -1;
+	}
+	else if (bShapeBEnd < 0)
+	{
+		bShapeBStart = 0;
+		bShapeBEnd = -1;
 	}
 
+	int * bigShape = new int [n+m]();
 
+	int startIndex = min(a[aShapeAStart]-1, b[aShapeBStart]-1);
+
+	//shape a merge
+	smerge(a + aShapeAStart, b + aShapeBStart, aShapeAEnd, aShapeBEnd,bigShape+startIndex);
+	//shape b merge
+	smerge(b + bShapeBStart,a + bShapeAStart,bShapeBEnd,bShapeAEnd,bigShape + shapeASize +startIndex);
+	
+
+	//aShapeTest
+	cout << "SHAPE C+D: |";
+	for(int i = 0; i < (n+m); i++)
+	{
+		cout << bigShape[i] << "| ";
+	}
+	cout << endl;
+
+	//STEP 4: SEND IT ALL TO PROC 1. 
+	MPI_Allreduce(bigShape, output, n+m, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+	
+	delete bigShape;
 	delete SRANKA;
 	delete SRANKB;
 }
@@ -315,6 +325,18 @@ int main (int argc, char * argv[]) {
 
 	int * c1 = new int [32];
 	pmerge(a1, b1, 15, 15, p,my_rank,c1);
+
+	if(my_rank == 0)
+	{
+		cout << "FINAL OUTPUT : |";
+		for(int i = 0; i<32; i++)
+		{
+			cout << c1[i] << "| ";
+		}
+		cout << endl;
+	}
+
+	
 	
 	delete [] a1;
 	delete [] b1;
