@@ -2,42 +2,98 @@
 #include <stdio.h>
 #include <iomanip>
 #include <string.h>
+#include <math.h>
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
-<<<<<<< HEAD
-void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
+int Rank(int * a, int first, int last, int valToFind)
+{
+	// Binary Search
+	int rank = 0;
+	int low = first;
+	int high = last - first;
+	while(low <= high)
+	{
+		int mid = low + (high - low) / 2;
+		
+		if(a[mid] == valToFind)
+		{
+			return rank;
+		}
+		else if(a[mid] < valToFind)
+		{
+			low = mid + 1;
+			rank++;
+		}
+		else
+		{
+			high = mid - 1;
+			rank++;
+		}
+	}
+	return rank;
+}
+
+void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * output = NULL)
 {
 	int n = lasta+1;
-	int m - lastb+1;
+	int m = lastb+1;
 
 	//step 1 -> create the SRANK arrays. 
-	int SRANKA[n];
-	int SRANKB[m];
-	int localSRANKA [n/p]; //may need to change this. 
-	int localSRANKB [m/p]; 
+	int * SRANKA = new int[n];
+	for(int i = 0; i < n; i++)
+	{
+		SRANKA[i] = 0;
+	}
+	int * SRANKB = new int[m];
+	for(int i = 0; i < m; i++)
+	{
+		SRANKB[i] = 0;
+	}
+
+	int * localSRANKA = new int[n/p]; //may need to change this. 
+	int * localSRANKB = new int[m/p]; 
 
 	//we rank every n/logm or m/logn index of A and B. This call does this. 
-	localSRANKA[(n/log2(m))-1]=Rank(b, 0,lastb,a[(n/log2(m))*(my_rank+1)-1]);
-	localSRANKB[(m/log2(n))-1]=Rank(a, 0,lasta,b[(m/log2(n))*(my_rank+1)-1]);
+	localSRANKA[int(n/log2(m)-1)]=Rank(b, 0,lastb,a[int((n/log2(m))*(my_rank+1)-1)]);
+
+	if (my_rank == 0)
+	{
+		cout << "the rank - " << Rank(b, 0,lastb,a[int((n/log2(m))*(my_rank+1)-1)]) << endl;
+		cout << "AFTER RANK SRANKA: ";
+		for(int i =0; i<n/p; i++)
+		{
+			cout << SRANKA[i] << " | ";
+		}
+		cout << endl;
+	}
+
+	localSRANKB[int((m/log2(n))-1)]=Rank(a, 0,lasta,b[int((m/log2(n))*(my_rank+1)-1)]);
 	//mpi gather the SRANK arrays on all procs.
 	MPI_Allgather(localSRANKA, n/p, MPI_INT, SRANKA, n/p, MPI_INT, MPI_COMM_WORLD);
 	MPI_Allgather(localSRANKB, m/p, MPI_INT, SRANKB, m/p, MPI_INT, MPI_COMM_WORLD);
+	delete [] localSRANKA;
+	delete [] localSRANKB;
+
 
 	//SRANK TEST PRINT
-	cout << "SRANKA: |";
-	for(int i = 0; i<n; i++)
+	if(my_rank == 0)
 	{
-		cout << SRANKA[i] << " | ";
-	}
-	cout << endl;
+		cout << "SRANKA: |";
+		for(int i = 0; i<n; i++)
+		{
+			cout << SRANKA[i] << " | ";
+		}
+		cout << endl;
 
-	cout << "SRANKB: |";
-	for(int i = 0; i<m; i++)
-	{
-		cout << SRANKB[i] << " | ";
+		cout << "SRANKB: |";
+		for(int i = 0; i<m; i++)
+		{
+			cout << SRANKB[i] << " | ";
+		}
+		cout << endl;
 	}
-	cout << endl;
+	
 
 	//step 2 -> Get the Shapes. 
 	/**get the A shape for my proc. Each proc will get an A shape and a B shape. 
@@ -81,37 +137,8 @@ void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 	int ShapeB[bShapeAEnd + bShapeBEnd];
 	smerge(b[bShapeBStart],a[bShapeAStart],bShapeBEnd,bShapeAEnd,ShapeB);
 	*/
-}
-
-int rank(int * a, int first, int last, int valToFind)
-=======
-int Rank(int * a, int first, int last, int valToFind)
->>>>>>> 50536655b8cc292955ac1ff5ec9d771bbe580f07
-{
-	// Binary Search
-	int rank = 0;
-	int low = first;
-	int high = last - first;
-	while(low <= high)
-	{
-		int mid = low + (high - low) / 2;
-		
-		if(a[mid] == valToFind)
-		{
-			return rank;
-		}
-		else if(a[mid] < valToFind)
-		{
-			low = mid + 1;
-			rank++;
-		}
-		else
-		{
-			high = mid - 1;
-			rank++;
-		}
-	}
-	return rank;
+	delete SRANKA;
+	delete SRANKB;
 }
 
 void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
@@ -217,36 +244,6 @@ int main (int argc, char * argv[]) {
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 	
 	// THE REAL PROGRAM IS HERE
-    //get user number for array size
-	int arrSize;
-	cout << "Please enter the size of the array: " << endl;
-	cin >> arrSize;
-	
-	int a[arrSize];
-	srand(time(nullptr));
-	for(int i = 0; i<arrSize; i++)
-	{
-		a[i] = rand()%1000 +1;
-	}
-	
-	//debug - display the initial array
-	for(int i =0; i<arrSize; i++)
-	{
-		cout << a[i] << " | ";
-	}
-	cout << endl;
-	
-	//actually sort it. 
-	mergesort(a,0,arrSize-1);
-	
-	//display the sorted array. 
-	for(int i =0; i<arrSize; i++)
-	{
-		cout << a[i] << " | ";
-	}
-	cout << endl;
-	
-	// Test arrays
 	int size = 16;
 	
 	int * a1 = new int [size];
@@ -266,12 +263,6 @@ int main (int argc, char * argv[]) {
 	a1[13] = 28;
 	a1[14] = 29;
 	a1[15] = 30;
-
-	for(int i =0; i<size; i++)
-	{
-		cout << a1[i] << " | ";
-	}
-	cout << endl;
 	
 	int * b1 = new int[size];
 	b1[0] = 4;
@@ -291,16 +282,30 @@ int main (int argc, char * argv[]) {
 	b1[14] = 31;
 	b1[15] = 32;
 
-	for(int i =0; i<size; i++)
+	if (my_rank == 0)
 	{
-		cout << b1[i] << " | ";
-	}
-	cout << endl;
+		cout << "rank test - " << Rank(b1, 0, 15, 14); 
 
+		for(int i =0; i<size; i++)
+		{
+			cout << a1[i] << " | ";
+		}
+		cout << endl;
+
+		for(int i =0; i<size; i++)
+		{
+			cout << b1[i] << " | ";
+		}
+		cout << endl;
+	}
 	
+
+	int * c1 = new int [32];
+	pmerge(a1, b1, 15, 15, p,my_rank,c1);
 	
 	delete [] a1;
 	delete [] b1;
+	delete [] c1;
 
 	// Shut down MPI
 	MPI_Finalize();
