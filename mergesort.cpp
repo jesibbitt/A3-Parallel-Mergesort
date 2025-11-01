@@ -6,39 +6,28 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
-<<<<<<< HEAD
 int Rank(int * a, int first, int last, int valToFind)
 {
 	// Binary Search
-	int rank = 0;
 	int low = first;
-	int high = last - first;
-	while(low <= high)
+	int high = last;
+	while(low < high)
 	{
 		int mid = low + (high - low) / 2;
 		
-		if(a[mid] == valToFind)
-		{
-			return rank;
-		}
-		else if(a[mid] < valToFind)
+		if(a[mid] < valToFind)
 		{
 			low = mid + 1;
-			rank++;
 		}
 		else
 		{
-			high = mid - 1;
-			rank++;
+			high = mid;
 		}
 	}
-	return rank;
+	return low;
 }
 
 void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * output = NULL)
-=======
-void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
->>>>>>> 70fa9d9640c57204c0f949c194e34ea2979920a2
 {
 	int n = lasta+1;
 	int m = lastb+1;
@@ -141,32 +130,8 @@ void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 	int ShapeB[bShapeAEnd + bShapeBEnd];
 	smerge(b[bShapeBStart],a[bShapeAStart],bShapeBEnd,bShapeAEnd,ShapeB);
 	*/
-<<<<<<< HEAD
 	delete SRANKA;
 	delete SRANKB;
-=======
-}
-
-int Rank(int * a, int first, int last, int valToFind)
-{
-	// Binary Search
-	int low = first;
-	int high = last;
-	while(low < high)
-	{
-		int mid = low + (high - low) / 2;
-		
-		if(a[mid] < valToFind)
-		{
-			low = mid + 1;
-		}
-		else
-		{
-			high = mid;
-		}
-	}
-	return low;
->>>>>>> 70fa9d9640c57204c0f949c194e34ea2979920a2
 }
 
 void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
@@ -311,7 +276,7 @@ int main (int argc, char * argv[]) {
 
 	if (my_rank == 0)
 	{
-		cout << "rank test - " << Rank(b1, 0, 15, 14); 
+		cout << "rank test - " << Rank(b1, 0, 15, 14) << endl; 
 
 		for(int i =0; i<size; i++)
 		{
