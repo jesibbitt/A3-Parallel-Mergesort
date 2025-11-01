@@ -6,6 +6,51 @@
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
 
+void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
+{	
+	//the two fingers - each array only increments once it finds a valid answer. 
+	//lastb is the last index in b. lasta is the last index in a. 
+	int x =0; //index in c
+	int i = 0; //index in a
+	int j = 0; //index in b
+	int segmentSize = lasta + lastb + 2;
+	int c [segmentSize]; // size of the chunk of the array. last = last index aka size -1. 
+	while(i <= lasta && j <= lastb)
+	{
+		if(a[i] <= b[j])
+		{
+			c[x] = a[i];
+			i++;
+		}
+		else
+		{
+			c[x] = b[j];
+			j++;
+		}
+		x++;
+	}
+	
+	//there might be remaining elements
+	while(i <= lasta)
+	{
+		c[x] = a[i];
+		i++;
+		x++;
+	}
+	while(j <= lastb)
+	{
+		c[x] = b[j];
+		j++;
+		x++;
+	}
+	
+	//save the sorted array to output. bc this is a pointer, itll just save onto the big array at its chunk position. 
+	for(int k = 0; k<segmentSize; k++)
+	{
+		output[k] = c[k];
+	}
+}
+
 int Rank(int * a, int first, int last, int valToFind)
 {
 	// Binary Search
@@ -97,23 +142,32 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	*smerge these. 
 	**/
 
-	/*
+	
 	int aShapeAStart;
-	if((m/log2(n) *my_rank)-1) < 0)
+	if(((m/log2(n) *my_rank)-1) < 0)
 	{
 		aShapeAStart = SRANKB[0];
 	}
 	else
 	{
-		aShapeAStart = SRANKB[(m/log2(n) *my_rank)-1];
+		aShapeAStart = SRANKB[int((m/log2(n) *my_rank)-1)];
 	}
 	int aShapeBStart = n/log2(m)*my_rank;
-	int aShapeAEnd = ((n/log2(m))*(my_rank+1)-1)	- aShapeAStart; //need this - for smerge.
-	int aShapeBEnd = (SRANKA[((n/log2(m))*(my_rank+1))-1]-1)	- bShapeBStart;
+	int aShapeAEnd = int(((n/log2(m))*(my_rank+1)-1) - aShapeAStart); //need - start for smerge
+	int aShapeBEnd = (SRANKA[int(((n/log2(m))*(my_rank+1))-1)]-1) - aShapeBStart;
 	int ShapeA[aShapeAEnd + aShapeBEnd];
-	smerge(a[aShapeAStart], b[aShapeBStart], aShapeAEnd, bShapeBEnd,ShapeA);
+	smerge(a + aShapeAStart, b + aShapeBStart, aShapeAEnd, aShapeBEnd,ShapeA);
 
-	*/
+	//aShapeTest
+	if(my_rank == 1)
+	{
+		cout << "SHAPE A: |";
+		for(int i = 0; i < (aShapeAEnd + aShapeBEnd+2); i++)
+		{
+			cout << ShapeA[i] << "| ";
+		}
+		cout << endl;
+	}
 
 	/**get the B shape for my proc.  
 	 * B shape B-side STARTS at b[SRANKA[(my_rank+1)*(n/logm)-1]+1]
@@ -122,61 +176,28 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	 * B shape A-side ENDS at a[SRANKB[(my_rank+1)*(m/logn)-1]-1]
 	**/
 
-	/*
-	int bShapeBStart = SRANKA[(my_rank+1)*(n/log2(m))-1]+1;
+	
+	int bShapeBStart = SRANKA[int((my_rank+1)*(n/log2(m))-1)];
 	int bShapeAStart = (my_rank+1)*(n/log2(m));
 	int bShapeBEnd = ((m/log2(n))*(my_rank+1)-1)	- bShapeBStart; // - for smerge
-	int bShapeAEnd = (SRANKB[(my_rank+1)*(m/log2(n))-1]-1)		-bShapeAStart;
+	int bShapeAEnd = (SRANKB[int((my_rank+1)*(m/log2(n))-1)]-1)		-bShapeAStart;
 	int ShapeB[bShapeAEnd + bShapeBEnd];
-	smerge(b[bShapeBStart],a[bShapeAStart],bShapeBEnd,bShapeAEnd,ShapeB);
-	*/
+	smerge(b + bShapeBStart,a + bShapeAStart,bShapeBEnd,bShapeAEnd,ShapeB);
+	
+	if(my_rank == 0)
+	{
+		cout << "bstart = " << bShapeBStart << endl;
+		cout << "SHAPE B: |";
+		for(int i = 0; i < (bShapeAEnd + bShapeBEnd+2); i++)
+		{
+			cout << ShapeB[i] << "| ";
+		}
+		cout << endl;
+	}
+
+
 	delete SRANKA;
 	delete SRANKB;
-}
-
-void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
-{	
-	//the two fingers - each array only increments once it finds a valid answer. 
-	//lastb is the last index in b. lasta is the last index in a. 
-	int x =0; //index in c
-	int i = 0; //index in a
-	int j = 0; //index in b
-	int segmentSize = lasta + lastb + 2;
-	int c [segmentSize]; // size of the chunk of the array. last = last index aka size -1. 
-	while(i <= lasta && j <= lastb)
-	{
-		if(a[i] <= b[j])
-		{
-			c[x] = a[i];
-			i++;
-		}
-		else
-		{
-			c[x] = b[j];
-			j++;
-		}
-		x++;
-	}
-	
-	//there might be remaining elements
-	while(i <= lasta)
-	{
-		c[x] = a[i];
-		i++;
-		x++;
-	}
-	while(j <= lastb)
-	{
-		c[x] = b[j];
-		j++;
-		x++;
-	}
-	
-	//save the sorted array to output. bc this is a pointer, itll just save onto the big array at its chunk position. 
-	for(int k = 0; k<segmentSize; k++)
-	{
-		output[k] = c[k];
-	}
 }
 
 void mergesort (int * a, int first, int last) //on first pass, last should just be size of array-1. 
