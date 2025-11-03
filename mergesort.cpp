@@ -176,31 +176,23 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 
 void mergesort (int * a, int first, int last) //on first pass, last should just be size of array-1. 
 {
-	if (first >= last){return;} //if we get to 1 left. 
-    
-	// New
-	int lasta = (last - first) / 2 + first;
-	int lastb = last;
-	int firstb = lasta + 1;
-	int firsta = first;
-	int mida = (lasta - firsta) / 2 + firsta;
-	int midb = (lastb - firstb) / 2 + firstb;
-	int sizeA = lasta - firsta;
-	int sizeB = lastb - firstb;
+	if (first >= last) return;
+
+    int mid = (first + last) / 2;
+    mergesort(a, first, mid, p, my_rank);
+    mergesort(a, mid + 1, last, p, my_rank);
 	
-	int * tempa = new int[sizeA];
-	int * tempb = new int[sizeB];
+	
+	int * tempa = a + first;
+	int * tempb = a + mid + 1;
+	
+	cout << "pre-pmerge" << endl;
+	
+	pmerge(tempa, tempb, mid - first, last - mid - 1, p, my_rank, a + first);
+	
+	cout << "pmerge done" << endl;
 
-	mergesort(tempa, firsta, mida - 1);
-	mergesort(tempa, mida, lasta);
-	smerge(tempa + firsta, tempa + mida, mida - firsta - 1, last - mida, tempa + firsta);
-
-	mergesort(tempb, firstb, midb - 1);
-	mergesort(tempb, midb, lastb);
-	smerge(tempb + firstb, tempb + midb, midb - firstb - 1, last - midb, tempb + firstb);
-
-	int * c = new int[last + 1];
-	// pmerge next
+	//smerge(a + first, a + mid + 1, mid - first, last - mid - 1, a + first);
 }
 
 // New compile and run commands for MPI!
