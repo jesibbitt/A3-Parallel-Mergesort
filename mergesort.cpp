@@ -2,106 +2,9 @@
 #include <stdio.h>
 #include <iomanip>
 #include <string.h>
+#include <math.h>
 #include "mpi.h" // message passing interface           - an api allowing processors to communicate with each other. 
 using namespace std;
-
-void pmerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
-{
-	int n = lasta+1;
-	int m - lastb+1;
-
-	//step 1 -> create the SRANK arrays. 
-	int SRANKA[n];
-	int SRANKB[m];
-	int localSRANKA [n/p]; //may need to change this. 
-	int localSRANKB [m/p]; 
-
-	//we rank every n/logm or m/logn index of A and B. This call does this. 
-	localSRANKA[(n/log2(m))-1]=Rank(b, 0,lastb,a[(n/log2(m))*(my_rank+1)-1]);
-	localSRANKB[(m/log2(n))-1]=Rank(a, 0,lasta,b[(m/log2(n))*(my_rank+1)-1]);
-	//mpi gather the SRANK arrays on all procs.
-	MPI_Allgather(localSRANKA, n/p, MPI_INT, SRANKA, n/p, MPI_INT, MPI_COMM_WORLD);
-	MPI_Allgather(localSRANKB, m/p, MPI_INT, SRANKB, m/p, MPI_INT, MPI_COMM_WORLD);
-
-	//SRANK TEST PRINT
-	cout << "SRANKA: |";
-	for(int i = 0; i<n; i++)
-	{
-		cout << SRANKA[i] << " | ";
-	}
-	cout << endl;
-
-	cout << "SRANKB: |";
-	for(int i = 0; i<m; i++)
-	{
-		cout << SRANKB[i] << " | ";
-	}
-	cout << endl;
-
-	//step 2 -> Get the Shapes. 
-	/**get the A shape for my proc. Each proc will get an A shape and a B shape. 
-	*A shape A-side STARTS at a[SRANKB[(m/logn *my_rank)-1]]  || RIGHT
-	*A shape A-side ENDS at a[(n/logm)*(my_rank+1)-1]	|| RIGHT
-	*A shape B-side STARTS at b[n/logm*my_rank]	 || RIGHT
-	*A shape B-side ENDS at b[SRANKA[((n/logm)*(my_rank+1))-1]-1]	|| RIGHT
-	*smerge these. 
-	**/
-
-	/*
-	int aShapeAStart;
-	if((m/log2(n) *my_rank)-1) < 0)
-	{
-		aShapeAStart = SRANKB[0];
-	}
-	else
-	{
-		aShapeAStart = SRANKB[(m/log2(n) *my_rank)-1];
-	}
-	int aShapeBStart = n/log2(m)*my_rank;
-	int aShapeAEnd = ((n/log2(m))*(my_rank+1)-1)	- aShapeAStart; //need this - for smerge.
-	int aShapeBEnd = (SRANKA[((n/log2(m))*(my_rank+1))-1]-1)	- bShapeBStart;
-	int ShapeA[aShapeAEnd + aShapeBEnd];
-	smerge(a[aShapeAStart], b[aShapeBStart], aShapeAEnd, bShapeBEnd,ShapeA);
-
-	*/
-
-	/**get the B shape for my proc.  
-	 * B shape B-side STARTS at b[SRANKA[(my_rank+1)*(n/logm)-1]+1]
-	 * B shape A-side STARTS at a[(my_rank+1)*(n/logm)]
-	 * B shape B-sied ENDS at b[(m/logn)*(my_rank+1)-1]
-	 * B shape A-side ENDS at a[SRANKB[(my_rank+1)*(m/logn)-1]-1]
-	**/
-
-	/*
-	int bShapeBStart = SRANKA[(my_rank+1)*(n/log2(m))-1]+1;
-	int bShapeAStart = (my_rank+1)*(n/log2(m));
-	int bShapeBEnd = ((m/log2(n))*(my_rank+1)-1)	- bShapeBStart; // - for smerge
-	int bShapeAEnd = (SRANKB[(my_rank+1)*(m/log2(n))-1]-1)		-bShapeAStart;
-	int ShapeB[bShapeAEnd + bShapeBEnd];
-	smerge(b[bShapeBStart],a[bShapeAStart],bShapeBEnd,bShapeAEnd,ShapeB);
-	*/
-}
-
-int Rank(int * a, int first, int last, int valToFind)
-{
-	// Binary Search
-	int low = first;
-	int high = last;
-	while(low < high)
-	{
-		int mid = low + (high - low) / 2;
-		
-		if(a[mid] < valToFind)
-		{
-			low = mid + 1;
-		}
-		else
-		{
-			high = mid;
-		}
-	}
-	return low;
-}
 
 void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 {	
@@ -148,33 +51,184 @@ void smerge(int * a, int * b, int lasta, int lastb, int * output = NULL)
 	}
 }
 
-void mergesort (int * a, int first, int last) //on first pass, last should just be size of array-1. 
+int Rank(int * a, int first, int last, int valToFind)
 {
-	if (first >= last){return;} //if we get to 1 left. 
-    
-	// New
-	int lasta = (last - first) / 2 + first;
-	int lastb = last;
-	int firstb = lasta + 1;
-	int firsta = first;
-	int mida = (lasta - firsta) / 2 + firsta;
-	int midb = (lastb - firstb) / 2 + firstb;
-	int sizeA = lasta - firsta;
-	int sizeB = lastb - firstb;
+	// Binary Search
+	int low = first;
+	int high = last;
+	while(low < high)
+	{
+		int mid = low + (high - low) / 2;
+		
+		if(a[mid] < valToFind)
+		{
+			low = mid + 1;
+		}
+		else
+		{
+			high = mid;
+		}
+	}
+	return low;
+}
+
+void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * output = NULL)
+{
+	int n = lasta+1;
+	int m = lastb+1;
+
+	//step 1 -> create the SRANK arrays. 
+	int * SRANKA = new int[n];
+	int * SRANKB = new int[m];
+
+	//create the local SRANKS. These will be gathered.
+	int * localSRANKA = new int[n/p]();
+	int * localSRANKB = new int[m/p](); 
+
+	//we rank every n/logm or m/logn index of A and B. This call does this. 
+	localSRANKA[int(n/log2(m)-1)]=Rank(b, 0,lastb,a[int((n/log2(m))*(my_rank+1)-1)]);
+
+	if (my_rank == 0)
+	{
+		cout << "AFTER RANK SRANKA: ";
+		for(int i =0; i<n/p; i++)
+		{
+			cout << localSRANKA[i] << " | ";
+		}
+		cout << endl;
+	}
+
+	localSRANKB[int((m/log2(n))-1)]=Rank(a, 0,lasta,b[int((m/log2(n))*(my_rank+1)-1)]);
+	//mpi gather the SRANK arrays on all procs.
+	MPI_Allgather(localSRANKA, n/p, MPI_INT, SRANKA, n/p, MPI_INT, MPI_COMM_WORLD);
+	MPI_Allgather(localSRANKB, m/p, MPI_INT, SRANKB, m/p, MPI_INT, MPI_COMM_WORLD);
+	delete [] localSRANKA;
+	delete [] localSRANKB;
+
+
+	//SRANK TEST PRINT
+	if(my_rank == 0)
+	{
+		cout << "SRANKA: |";
+		for(int i = 0; i<n; i++)
+		{
+			cout << SRANKA[i] << " | ";
+		}
+		cout << endl;
+
+		cout << "SRANKB: |";
+		for(int i = 0; i<m; i++)
+		{
+			cout << SRANKB[i] << " | ";
+		}
+		cout << endl;
+	}
 	
-	int * tempa = new int[sizeA];
-	int * tempb = new int[sizeB];
 
-	mergesort(tempa, firsta, mida - 1);
-	mergesort(tempa, mida, lasta);
-	smerge(tempa + firsta, tempa + mida, mida - firsta - 1, last - mida, tempa + firsta);
+	//step 2 -> Get the Shapes. 
+	/**get the A shape for my proc. Each proc will get an A shape and a B shape. 
+	*A shape A-side STARTS at a[SRANKB[(m/logn *my_rank)-1]]  || RIGHT
+	*A shape A-side ENDS at a[(n/logm)*(my_rank+1)-1]	|| RIGHT
+	*A shape B-side STARTS at b[n/logm*my_rank]	 || RIGHT
+	*A shape B-side ENDS at b[SRANKA[((n/logm)*(my_rank+1))-1]-1]	|| RIGHT
+	*smerge these. 
+	**/
 
-	mergesort(tempb, firstb, midb - 1);
-	mergesort(tempb, midb, lastb);
-	smerge(tempb + firstb, tempb + midb, midb - firstb - 1, last - midb, tempb + firstb);
+	
+	int aShapeAStart;
+	if(((m/log2(n) *my_rank)-1) < 0)
+	{
+		aShapeAStart = SRANKB[0];
+	}
+	else
+	{
+		aShapeAStart = SRANKB[int((m/log2(n) *my_rank)-1)];
+	}
+	int aShapeBStart = n/log2(m)*my_rank;
+	int aShapeAEnd = int(((n/log2(m))*(my_rank+1)-1) - aShapeAStart); //need - start for smerge
+	int aShapeBEnd = (SRANKA[int(((n/log2(m))*(my_rank+1))-1)]-1) - aShapeBStart;
+	int shapeASize = aShapeAEnd + aShapeBEnd + 2;
+	
 
-	int * c = new int[last + 1];
-	// pmerge next
+	
+
+	/**get the B shape for my proc.  
+	 * B shape B-side STARTS at b[SRANKA[(my_rank+1)*(n/logm)-1]+1]
+	 * B shape A-side STARTS at a[(my_rank+1)*(n/logm)]
+	 * B shape B-sied ENDS at b[(m/logn)*(my_rank+1)-1]
+	 * B shape A-side ENDS at a[SRANKB[(my_rank+1)*(m/logn)-1]-1]
+	**/
+
+	
+	int bShapeBStart = SRANKA[int((my_rank+1)*(n/log2(m))-1)];
+	int bShapeAStart = (my_rank+1)*(n/log2(m));
+	int bShapeBEnd = ((m/log2(n))*(my_rank+1)-1)	- bShapeBStart; // - for smerge
+	int bShapeAEnd = (SRANKB[int((my_rank+1)*(m/log2(n))-1)]-1)		-bShapeAStart;
+
+	//STEP 3: MAKE OUR COMBINED SHAPE FOR OUR PROC
+	/** We need to make a big shape of A+B so that we can send both back
+	 * We do this by using a bigShape array, and calling smerge so that it returns-
+	 * each shape to its appropriate spot in the big shape (B after A.)
+	 * This is literally just 2 smerge calls.
+	**/
+	//shape of our 2 shapes that we are looking at.
+
+	if (bShapeAEnd < 0) //nothing in a side. 
+	{
+		bShapeAStart = 0;
+		bShapeAEnd = -1;
+	}
+	else if (bShapeBEnd < 0)
+	{
+		bShapeBStart = 0;
+		bShapeBEnd = -1;
+	}
+
+	int * bigShape = new int [n+m]();
+
+	int startIndex = min(a[aShapeAStart]-1, b[aShapeBStart]-1);
+
+	//shape a merge
+	smerge(a + aShapeAStart, b + aShapeBStart, aShapeAEnd, aShapeBEnd,bigShape+startIndex);
+	//shape b merge
+	smerge(b + bShapeBStart,a + bShapeAStart,bShapeBEnd,bShapeAEnd,bigShape + shapeASize +startIndex);
+	
+
+	//aShapeTest
+	cout << "SHAPE C+D: |";
+	for(int i = 0; i < (n+m); i++)
+	{
+		cout << bigShape[i] << "| ";
+	}
+	cout << endl;
+
+	//STEP 4: SEND IT ALL TO PROC 1. 
+	MPI_Allreduce(bigShape, output, n+m, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+	
+	delete bigShape;
+	delete SRANKA;
+	delete SRANKB;
+}
+
+void mergesort (int * a, int first, int last, int p, int my_rank) //on first pass, last should just be size of array-1. 
+{
+	if (first >= last) return;
+
+    int mid = (first + last) / 2;
+    mergesort(a, first, mid, p, my_rank);
+    mergesort(a, mid + 1, last, p, my_rank);
+	
+	
+	int * tempa = a + first;
+	int * tempb = a + mid + 1;
+	
+	cout << "pre-pmerge" << endl;
+	
+	pmerge(tempa, tempb, mid - first, last - mid - 1, p, my_rank, a + first);
+	
+	cout << "pmergedone" << endl;
+
+	//smerge(a + first, a + mid + 1, mid - first, last - mid - 1, a + first);
 }
 
 // New compile and run commands for MPI!
@@ -205,36 +259,6 @@ int main (int argc, char * argv[]) {
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
 	
 	// THE REAL PROGRAM IS HERE
-    //get user number for array size
-	int arrSize;
-	cout << "Please enter the size of the array: " << endl;
-	cin >> arrSize;
-	
-	int a[arrSize];
-	srand(time(nullptr));
-	for(int i = 0; i<arrSize; i++)
-	{
-		a[i] = rand()%1000 +1;
-	}
-	
-	//debug - display the initial array
-	for(int i =0; i<arrSize; i++)
-	{
-		cout << a[i] << " | ";
-	}
-	cout << endl;
-	
-	//actually sort it. 
-	mergesort(a,0,arrSize-1);
-	
-	//display the sorted array. 
-	for(int i =0; i<arrSize; i++)
-	{
-		cout << a[i] << " | ";
-	}
-	cout << endl;
-	
-	// Test arrays
 	int size = 16;
 	
 	int * a1 = new int [size];
@@ -254,12 +278,6 @@ int main (int argc, char * argv[]) {
 	a1[13] = 28;
 	a1[14] = 29;
 	a1[15] = 30;
-
-	for(int i =0; i<size; i++)
-	{
-		cout << a1[i] << " | ";
-	}
-	cout << endl;
 	
 	int * b1 = new int[size];
 	b1[0] = 4;
@@ -279,16 +297,42 @@ int main (int argc, char * argv[]) {
 	b1[14] = 31;
 	b1[15] = 32;
 
-	for(int i =0; i<size; i++)
+	if (my_rank == 0)
 	{
-		cout << b1[i] << " | ";
+		cout << "rank test - " << Rank(b1, 0, 15, 14) << endl; 
+
+		for(int i =0; i<size; i++)
+		{
+			cout << a1[i] << " | ";
+		}
+		cout << endl;
+
+		for(int i =0; i<size; i++)
+		{
+			cout << b1[i] << " | ";
+		}
+		cout << endl;
 	}
-	cout << endl;
+	
+
+	int * c1 = new int [32];
+	pmerge(a1, b1, 15, 15, p,my_rank,c1);
+
+	if(my_rank == 0)
+	{
+		cout << "FINAL OUTPUT : |";
+		for(int i = 0; i<32; i++)
+		{
+			cout << c1[i] << "| ";
+		}
+		cout << endl;
+	}
 
 	
 	
 	delete [] a1;
 	delete [] b1;
+	delete [] c1;
 
 	// Shut down MPI
 	MPI_Finalize();
