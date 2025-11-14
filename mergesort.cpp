@@ -73,7 +73,7 @@ int Rank(int * a, int first, int last, int valToFind)
 }
 
 void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * output = NULL)
-{	
+{
 	int n = lasta+1;
 	if (n == 1) {return ;}
 	int m = lastb+1;
@@ -112,6 +112,8 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	p = log2(n);
 	if(my_rank >=p)
 	{
+		cout << "waiting shape for proc " << my_rank << endl;
+		cout << n << endl;
 		int * bigShape = new int [n+m]();
 		MPI_Allreduce(bigShape, output, n+m, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 		return;
@@ -152,13 +154,15 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 	int bShapeBEnd = ((nlogm)*(my_rank+1)-1)	- bShapeBStart; // - for smerge
 	int bShapeAEnd = (SRANKB[int((my_rank+1)*(nlogm)-1)]-1)		-bShapeAStart;
 
-	if(my_rank == 2)
+
+
+	//CASE HANDLING
+	if((my_rank == p-1) && SRANKB[n] < n)
 	{
-		cout << "TEST FOR RANK 2" << endl;
-		cout << aShapeBStart << endl;
-		cout << aShapeAStart << endl;
-		cout << aShapeBEnd << endl;
-		cout << aShapeAEnd << endl;
+		bShapeAStart = n-1;
+		bShapeAEnd = 0;
+		aShapeAEnd = n-2-aShapeAStart;
+		shapeASize = aShapeAEnd + aShapeBEnd + 2;
 	}
 	
 	//STEP 3: MAKE OUR COMBINED SHAPE FOR OUR PROC
@@ -183,16 +187,32 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 
 	//make the big shape
 	int * bigShape = new int [n+m]();
-	int startIndex = min(a[aShapeAStart]-1, b[aShapeBStart]-1);
+	//find the starting index. We can actually find this through the power of SRANKS
+	int startIndex = 0;
+	if(my_rank != 0)
+	{
+		startIndex = (my_rank * nlogm) + SRANKB[(my_rank * nlogm) -1];
+	}
 	
 	
 	if((my_rank == p-1) && (p%2==1))
 	{
 		//weird case where we dont have a b shape because theres an odd num of shapes
 		cout << "we made it here " << endl;
+		cout << "BIG TEST : " << endl;
+		cout << "aShapeAStart : " << aShapeAStart << endl;
+		cout << "aShapeAEnd : " << aShapeAEnd << endl;
+		cout << "bShapeBStart : " << bShapeBStart << endl;
+		cout << "bShapeBEnd : " << bShapeBEnd << endl;
+
 		aShapeAEnd = (n-1) - aShapeAStart;
 		aShapeBEnd = (n-1) - aShapeBStart;
 		smerge(a + aShapeAStart, b + aShapeBStart, aShapeAEnd, aShapeBEnd,bigShape+startIndex);
+
+		for(int i = startIndex; i < (aShapeBEnd + aShapeAEnd); i++)
+		{
+			cout << "| " << bigShape[i];
+		}
 	}
 	else
 	{
@@ -200,25 +220,24 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 		//shape a merge
 		smerge(a + aShapeAStart, b + aShapeBStart, aShapeAEnd, aShapeBEnd,bigShape+startIndex);
 		//shape b merge
+		//CHECK THIS
 		smerge(b + bShapeBStart,a + bShapeAStart,bShapeBEnd,bShapeAEnd,bigShape + shapeASize +startIndex);
 	}
 
-
-	cout << "BIG SHAPE FOR RANK " << my_rank << " - | ";
-	for(int i =0; i < n+m; i++)
-	{
-		cout << bigShape[i] << "| ";
-	}
-	cout << endl;
-
 	//STEP 4: SHARE IT WE ARE DONE AND NO LONGER SAD 
 	MPI_Allreduce(bigShape, output, n+m, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-	cout << "|";
-	for (int i = 0; i < 4; i++)
+	
+	if(my_rank == 0)
 	{
-		cout << output[i] << "| ";
+		cout << "bigShape - |";
+		for(int i = 0; i < n+m; i++)
+		{
+			cout << bigShape[i] << " | ";
+		}
+		cout << endl;
 	}
-	cout << endl << endl;
+	
+
 	delete [] bigShape;
 	delete [] SRANKA;
 	delete [] SRANKB;
@@ -226,7 +245,7 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 
 void mergesort (int * a, int first, int last, int p, int my_rank) //on first pass, last should just be size of array-1. 
 {
-	if(last-first <7) return;
+	//if(last-first <15) return;
 
 	if (first >= last) return;
 
@@ -281,37 +300,37 @@ int main (int argc, char * argv[]) {
 	int size = 32;
 	
 	int * a1 = new int [size];
-	a1[0] = 1;
-	a1[1] = 2;
-	a1[2] = 3;
+	a1[0] = 6;
+	a1[1] = 10;
+	a1[2] = 24;
 	a1[3] = 5;
-	a1[4] = 7;
+	a1[4] = 20;
 	a1[5] = 12;
 	a1[6] = 13;
 	a1[7] = 14;
 	a1[8] = 16;
-	a1[9] = 18;
-	a1[10] = 22;
+	a1[9] = 27;
+	a1[10] = 21;
 	a1[11] = 23;
 	a1[12] = 26;
 	a1[13] = 28;
 	a1[14] = 29;
-	a1[15] = 30;
-	a1[16] = 4;
-	a1[17] = 6;
+	a1[15] = 31;
+	a1[16] = 30;
+	a1[17] = 1;
 	a1[18] = 8;
 	a1[19] = 9;
-	a1[20] = 10;
-	a1[21] = 11;
-	a1[22] = 15;
+	a1[20] = 11;
+	a1[21] = 2;
+	a1[22] = 18;
 	a1[23] = 17;
 	a1[24] = 19;
-	a1[25] = 20;
-	a1[26] = 21;
-	a1[27] = 24;
+	a1[25] = 7;
+	a1[26] = 22;
+	a1[27] = 3;
 	a1[28] = 25;
-	a1[29] = 27;
-	a1[30] = 31;
+	a1[29] = 15;
+	a1[30] = 4;
 	a1[31] = 32;
 
 	int * b1 = new int [16];
@@ -332,39 +351,43 @@ int main (int argc, char * argv[]) {
 	b1[14] = 15;
 	b1[15] = 16;
 
-	int * c1 = new int [8];
-	c1[0] = 1;
-	c1[1] = 2;
-	c1[2] = 5;
-	c1[3] = 6;
-	c1[4] = 3;
-	c1[5] = 4;
-	c1[6] = 7;
-	c1[7] = 8;
+	int * c1 = new int [16];
+	c1[0] = 2;
+	c1[1] = 3;
+	c1[2] = 10;
+	c1[3] = 15;
+	c1[4] = 5;
+	c1[5] = 6;
+	c1[6] = 9;
+	c1[7] = 11;
+	c1[8] = 1;
+	c1[9] = 7;
+	c1[10] = 12;
+	c1[11] = 13;
+	c1[12] = 4;
+	c1[13] = 8;
+	c1[14] = 14;
+	c1[15] = 16;
 
-	if (my_rank == 0)
-	{
-		for(int i =0; i<16; i++)
-		{
-			cout << b1[i] << " | ";
-		}
-		cout << endl;
-	}
+	int * d1 = new int [32];
 
-	mergesort(b1, 0, 15, p, my_rank);
+	mergesort(a1, 0, 15, p, my_rank);
+	//pmerge (a1, a1+16, 15, 15, p, my_rank, d1);
 
 	if(my_rank == 0)
 	{
 		cout << "FINAL OUTPUT : |";
 		for(int i = 0; i<16; i++)
 		{
-			cout << b1[i] << "| ";
+			cout << a1[i] << "| ";
 		}
 		cout << "END" << endl;
 	}
 
+
 	delete [] a1;
 	delete [] b1;
+	delete [] c1;
 
 	// Shut down MPI
 	MPI_Finalize();
