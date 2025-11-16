@@ -78,10 +78,15 @@ int Rank(int * a, int first, int last, int valToFind)
 void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * output = NULL)
 {
 	int n = lasta+1;
-	if (n == 1) {return ;}
+	if (n == 1) 
+    {
+        smerge(a, b, lasta, lastb, output);
+        return ;
+    }
 	int m = lastb+1;
-	int nlogm = int(n/log2(m));
-    int numShapes = nlogm * 2;
+	int nlogm = int(n/int(log2(m)));
+    int mlogn = int(m/int(log2(n)));
+    int numShapes = (int(n/nlogm) + int(m/mlogn));
 
 	//step 1 -> create the SRANK arrays. 
 	/** We need to make local and global SRANKS.
@@ -99,7 +104,6 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 
 	//we rank every n/logm or m/logn index of A and B. This call does this. 
 	localSRANKA[nlogm-1]=Rank(b, 0,lastb,a[(nlogm*(my_rank+1)-1)%n]);
-
 	localSRANKB[nlogm-1]=Rank(a, 0,lasta,b[((nlogm)*(my_rank+1)-1)%n]);
 	//mpi gather the SRANK arrays on all procs.
 	MPI_Allgather(localSRANKA, nlogm, MPI_INT, SRANKA, nlogm, MPI_INT, MPI_COMM_WORLD);
@@ -122,20 +126,32 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
     int * aPoints = new int [numShapes+1]();
     int * bPoints = new int [numShapes+1]();
 
-    for(int i = my_rank; i < nlogm; i+=p)
+    for(int i = my_rank; i < numShapes /2; i+=p)
     {
         //odds 
         int aStopPoint = nlogm * (i+1);
+        //deal with a odd number of total shapes
+        if(my_rank == (numShapes/2)-1 && aStopPoint < n)
+        {
+            aStopPoint = n;
+        }
         aPoints[i+1] = aStopPoint;
         int bStopPoint = SRANKA[(nlogm * (i+1)) -1];
         bPoints[i+1] = bStopPoint;
 
         //evens
         aStopPoint = SRANKB[(nlogm * (i+1)) -1];
-        aPoints[i+1+nlogm] = aStopPoint;
+        aPoints[i+1+(numShapes/2)] = aStopPoint;
         bStopPoint = nlogm * (i+1);
-        bPoints[i+1+nlogm] = bStopPoint;
+        //deal with a odd number of total shapes
+        if(my_rank == (numShapes/2)-1 && bStopPoint < n)
+        {
+            bStopPoint = n;
+        }
+        bPoints[i+1+(numShapes/2)] = bStopPoint;
     }
+
+
 
 
     //gather the stop points together. We can just do allreduce and sum. 
@@ -154,8 +170,8 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
     int * globalBPoints = new int [numShapes+1];
     globalBPoints[0] = 0;
 
-    smerge(tempA+1, tempA+nlogm+1, nlogm-1, nlogm-1, globalAPoints+1);
-    smerge(tempB+1, tempB+nlogm+1, nlogm-1, nlogm-1, globalBPoints+1);
+    smerge(tempA+1, tempA+(numShapes/2)+1, (numShapes/2)-1, (numShapes/2)-1, globalAPoints+1);
+    smerge(tempB+1, tempB+(numShapes/2)+1, (numShapes/2)-1, (numShapes/2)-1, globalBPoints+1);
     
 
     //then do same process but make the shapes using the start and stop points. 
@@ -167,18 +183,14 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
         if(i == 0){startPoint = 0;}
         int aStart = globalAPoints[i];
         int bStart = globalBPoints[i];
-        int aEnd = max (0, (globalAPoints[i+1]-1) - globalAPoints[i]);
-        int bEnd = max(0, (globalBPoints[i+1]-1) - globalBPoints[i]);
+        int aEnd = (globalAPoints[i+1]-1) - globalAPoints[i];
+        int bEnd = (globalBPoints[i+1]-1) - globalBPoints[i];
 
-        
-        cout << "shape num - " << i << ". 1.  " << aStart << " | 2. " << bStart 
-        << " | 3. " << aEnd << " | 4. " << bEnd << " | 5. " << startPoint << endl;
-        
         smerge(a + aStart, b + bStart, aEnd, bEnd,bigShape + startPoint);
+
     }
     //then lastly combine down like before. 
     MPI_Allreduce(bigShape, output, n+m, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    cout << "test" << endl;
     
     delete [] globalAPoints;
     delete [] globalBPoints;
@@ -189,26 +201,18 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
 
 void mergesort (int * a, int first, int last, int p, int my_rank) //on first pass, last should just be size of array-1. 
 {
-	if(last-first <15) return;
+	//if(last-first <1) return;
 
 	if (first >= last) return;
 
     int mid = (first + last) / 2;
-	cout << "run " << last+1 << endl;
     mergesort(a, first, mid, p, my_rank);
-	cout << "merged " << first << ", " << mid << endl;
     mergesort(a, mid + 1, last, p, my_rank);
-	cout << "merged " << mid+1 << ", " << last << endl;
-	
 	
 	int * tempa = a + first;
 	int * tempb = a + mid + 1;
 	
-
-	
 	pmerge(tempa, tempb, mid - first, last - mid - 1, p, my_rank, a + first);
-	
-	cout << "pmerge done" << endl;
 
 	//smerge(a + first, a + mid + 1, mid - first, last - mid - 1, a + first);
 }
@@ -244,7 +248,7 @@ int main (int argc, char * argv[]) {
 	int size = 32;
 	
 	int * a1 = new int [size];
-	a1[0] = 1;
+	a1[0] = 4;
 	a1[1] = 2;
 	a1[2] = 3;
 	a1[3] = 5;
@@ -260,7 +264,7 @@ int main (int argc, char * argv[]) {
 	a1[13] = 28;
 	a1[14] = 29;
 	a1[15] = 30;
-	a1[16] = 4;
+	a1[16] = 1;
 	a1[17] = 6;
 	a1[18] = 8;
 	a1[19] = 9;
@@ -319,15 +323,15 @@ int main (int argc, char * argv[]) {
 
 	int * d1 = new int [32];
 
-	//mergesort(a1, 0, 31, p, my_rank);
-	pmerge (b1, b1+8, 7, 7, p, my_rank, d1);
+	mergesort(a1, 0, 31, p, my_rank);
+	//pmerge (a1, a1+16, 7, 7, p, my_rank, d1);
 
 	if(my_rank == 0)
 	{
 		cout << "FINAL OUTPUT : |";
-		for(int i = 0; i<16; i++)
+		for(int i = 0; i<32; i++)
 		{
-			cout << d1[i] << "| ";
+			cout << a1[i] << "| ";
 		}
 		cout << "END" << endl;
 	}
