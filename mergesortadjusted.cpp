@@ -86,7 +86,7 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
     }
 	int nlogm = int(n/int(log2(m)));
     int mlogn = int(m/int(log2(n)));
-    int numShapes = (int(n/nlogm) + int(m/mlogn));
+    int numShapes = (int(n/nlogm) + int(m/mlogn)); //this is just the number of ranks. 
     if( numShapes % 2 == 1)
     {
         //numShapes--;
@@ -138,6 +138,8 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
     int * aPoints = new int [numShapes+1]();
     int * bPoints = new int [numShapes+1]();
 
+	int leftoverm = -1;
+	int leftovern = -1;
 
     for(int i = my_rank; i< int(m/mlogn); i+=p)
     {
@@ -148,7 +150,9 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
         //deal with a odd number of total shapes
         if(i == (int(m/mlogn))-1 && bStopPoint != m)
         {
-            bStopPoint = m;
+			//this means we have basically an extra shape we need to compute. 
+            //bStopPoint = m;
+			leftoverm = m;
         }
         bPoints[i+1] = bStopPoint;
     }
@@ -160,7 +164,9 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
         //deal with a odd number of total shapes
         if(i == (int(n/nlogm))-1 && aStopPoint != n)
         {
-            aStopPoint = n;
+			//this means we have basically an extra shape we need to compute. 
+            //aStopPoint = n;
+			leftovern = n;
         }
         aPoints[i+1] = aStopPoint;
         int bStopPoint = SRANKA[(nlogm * (i+1)) -1];
@@ -218,11 +224,45 @@ void pmerge(int * a, int * b, int lasta, int lastb, int p, int my_rank, int * ou
         int bEnd = (globalBPoints[i+1]-1) - globalBPoints[i];
 
         smerge(a + aStart, b + bStart, aEnd, bEnd,bigShape + startPoint);
+
+		//deal with the left over shape, if it exists. 
+		if(i == numShapes-1)
+		{
+			if(leftovern == -1)
+			{
+				leftovern = globalAPoints[numShapes];
+			}
+			if(leftoverm == -1)
+			{
+				leftoverm = globalBPoints[numShapes];
+			}
+
+			startPoint = globalAPoints[numShapes] + globalBPoints[numShapes];
+			aStart = globalAPoints[numShapes];
+			bStart = globalBPoints[numShapes];
+			aEnd = leftovern - aStart -1;
+			bEnd = leftovern - bStart -1;
+			smerge(a + aStart, b + bStart, aEnd, bEnd,bigShape + startPoint);
+
+
+		}
     }
+
+	
     
     //then lastly combine down like before. 
     MPI_Allreduce(bigShape, output, n+m, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    cout << "FAILTEST: " << a[0] << " , " << b[0] << ", " << lasta << ", " << lastb << endl;
+
+	cout << endl;
+    if(my_rank == 0)
+	{
+		cout << "MY OUTPUT IS: | ";
+		for(int i =0; i< n+m; i++)
+		{
+			cout << output[i] << " | ";
+		}
+		cout << endl;
+	}
     delete [] globalAPoints;
     delete [] globalBPoints;
     delete [] bigShape;
@@ -316,53 +356,110 @@ int main (int argc, char * argv[]) {
         cout << Rank(a1, 0, 15, 31) << endl;
     }
 
-	int * b1 = new int [16];
-	b1[0] = 1;
-	b1[1] = 2;
-	b1[2] = 4;
-	b1[3] = 5;
-	b1[4] = 6;
-	b1[5] = 9;
-	b1[6] = 12;
-	b1[7] = 14;
-	b1[8] = 3;
+	int * b1 = new int [64];
+	b1[0] = 0;
+	b1[1] = 4;
+	b1[2] = 1;
+	b1[3] = 3;
+	b1[4] = 7;
+	b1[5] = 8;
+	b1[6] = 100;
+	b1[7] = 64;
+	b1[8] = 77;
 	b1[9] = 7;
-	b1[10] = 8;
-	b1[11] = 10;
-	b1[12] = 11;
-	b1[13] = 13;
-	b1[14] = 15;
-	b1[15] = 16;
+	b1[10] = 68;
+	b1[11] = 62;
+	b1[12] = 1;
+	b1[13] = 2;
+	b1[14] = 5;
+	b1[15] = 9;
+	b1[16] =22;
+	b1[17] =51;
+	b1[18] =5;
+	b1[19] =17;
+	b1[20] =11;
+	b1[21] =87;
+	b1[22] =67;
+	b1[23] =90;
+	b1[24] =99;
+	b1[25] =102;
+	b1[26] =40;
+	b1[27] =45;
+	b1[28] =1;
+	b1[29] = 17;
+	b1[30] =8;
+	b1[31] =25;
+	b1[32] =34;
+	b1[33] =43;
+	b1[34] =1;
+	b1[35] =3;
+	b1[36] =90;
+	b1[37] =65;
+	b1[38] =24;
+	b1[39] = 7;
+	b1[40] =69;
+	b1[41] =12;
+	b1[42] =31;
+	b1[43] =62;
+	b1[44] =50;
+	b1[45] =40;
+	b1[46] =11;
+	b1[47] =9;
+	b1[48] =109;
+	b1[49] = 255;
+	b1[50] =47;
+	b1[51] =81;
+	b1[52] =76;
+	b1[53] =21;
+	b1[54] =40;
+	b1[55] =39;
+	b1[56] =88;
+	b1[57] =5;
+	b1[58] =90;
+	b1[59] =101;
+	b1[60] = 67;
+	b1[61] = 54;
+	b1[62] = 33;
+	b1[63] = 6;
 
-	int * c1 = new int [16];
-	c1[0] = 2;
-	c1[1] = 3;
-	c1[2] = 10;
-	c1[3] = 15;
-	c1[4] = 5;
-	c1[5] = 6;
-	c1[6] = 9;
-	c1[7] = 11;
-	c1[8] = 1;
-	c1[9] = 7;
-	c1[10] = 12;
-	c1[11] = 13;
-	c1[12] = 4;
-	c1[13] = 8;
-	c1[14] = 14;
-	c1[15] = 16;
+	int * c1 = new int [11];
+	c1[0] = 0;
+	c1[1] = 1;
+	c1[2] = 3;
+	c1[3] = 4;
+	c1[4] = 7;
+	c1[5] = 7;
+	c1[6] = 8;
+	c1[7] = 64;
+	c1[8] = 68;
+	c1[9] = 77;
+	c1[10] = 100;
+	
+	int * e1 = new int [12];
+	e1[0] = 1;
+	e1[1] = 2;
+	e1[2] = 5;
+	e1[3] = 5;
+	e1[4] = 9;
+	e1[5] = 11;
+	e1[6] = 17;
+	e1[7] = 22;
+	e1[8] = 51;
+	e1[9] = 62;
+	e1[10] = 67;
+	e1[11] = 87;
 
 	int * d1 = new int [32];
 
-	mergesort(a1, 0, 30, p, my_rank);
-	//pmerge (a1, a1+16, 15, 13, p, my_rank, d1);
+	mergesort(b1, 0, 22, p, my_rank);
+	//pmerge (c1, e1, 10, 11, p, my_rank, d1);
 
 	if(my_rank == 0)
 	{
 		cout << "FINAL OUTPUT : |";
-		for(int i = 0; i<30; i++)
+		for(int i = 0; i<23; i++)
 		{
-			cout << a1[i] << "| ";
+			cout << b1[i] << "| ";
 		}
 		cout << "END" << endl;
 	}
